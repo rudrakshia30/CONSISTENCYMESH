@@ -4,6 +4,7 @@
  */
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+console.log('[ConsistencyMesh] Using API_BASE:', API_BASE);
 
 /** Generate a unique session ID for cross-session isolation. */
 function getSessionId(): string {
