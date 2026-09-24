@@ -154,10 +154,13 @@ def create_app() -> FastAPI:
     register_exception_handlers(application)
 
     # CORS middleware
+    origins = settings.cors_origin_list
+    allow_all = "*" in origins or not origins
     application.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.cors_origin_list,
-        allow_credentials=True,
+        allow_origins=["*"] if allow_all else origins,
+        allow_origin_regex=None if allow_all else r"https://.*\.vercel\.app",
+        allow_credentials=not allow_all,
         allow_methods=["*"],
         allow_headers=["*"],
     )

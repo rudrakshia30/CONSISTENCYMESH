@@ -135,8 +135,8 @@ class Settings(BaseSettings):
         description="Logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL.",
     )
     cors_origins: str = Field(
-        default="http://localhost:5173,http://localhost:3000",
-        description="Comma-separated CORS allowed origins.",
+        default="*",
+        description="Comma-separated CORS allowed origins or * for all origins.",
     )
 
     @property
