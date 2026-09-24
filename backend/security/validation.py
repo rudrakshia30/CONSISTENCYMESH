@@ -92,6 +92,6 @@ def validate_upload(filename: str, file_content: bytes, settings: Settings) -> N
         if not file_content.startswith(b"%PDF"):
             raise ValidationError("Invalid PDF magic bytes.")
     elif ext == ".docx":
-        if not file_content.startswith(b"\x50\x4B\x03\x04"):
+        if not file_content.startswith(b"PK"):
             raise ValidationError("Invalid DOCX magic bytes.")
         validate_docx_zip_safety(file_content, settings)
