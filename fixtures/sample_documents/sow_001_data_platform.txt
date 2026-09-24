@@ -1,0 +1,61 @@
+STATEMENT OF WORK #001
+
+Effective Date: February 15, 2024
+Reference: Master Services Agreement dated January 1, 2024
+Between: Acme Corporation ("Client") and TechStar Solutions Inc. ("Provider")
+
+Project: Enterprise Data Platform Migration
+
+SECTION 1 - SCOPE OF WORK
+
+1.1 Provider shall migrate Client's legacy data platform to a cloud-based architecture, including data warehouse design, ETL pipeline development, and dashboard creation.
+
+1.2 The project shall be completed in three phases: (a) Assessment and Design (8 weeks); (b) Development and Testing (16 weeks); (c) Deployment and Optimization (8 weeks).
+
+SECTION 2 - TERM AND TERMINATION
+
+2.1 This Statement of Work shall commence on the Effective Date and continue for thirty-two (32) weeks unless terminated earlier.
+
+2.2 Termination for Convenience. Either party may terminate this SOW upon thirty (30) days prior written notice to the other party. This explicitly supersedes the ninety (90) day notice period in the MSA for this engagement only.
+
+2.3 Termination for Cause. Either party may terminate this SOW immediately upon written notice if the other party materially breaches and fails to cure within fifteen (15) days of notice. This cure period explicitly overrides the thirty (30) day cure period in Section 1.3 of the MSA for this SOW.
+
+SECTION 3 - PAYMENT
+
+3.1 Total project fee: $450,000 USD, payable in monthly installments based on completed milestones.
+
+3.2 Payment Terms. Client shall pay Provider within forty-five (45) days of receipt of invoice. Note: This extends the payment term from the MSA's thirty (30) day requirement for this engagement.
+
+3.3 Late Payment. Overdue payments shall accrue interest at the rate of 2.0% per month.
+
+3.4 Travel Expenses. Provider shall be reimbursed for pre-approved travel expenses within thirty (30) days of submission, not fifteen (15) days as stated in the MSA.
+
+SECTION 4 - INTELLECTUAL PROPERTY
+
+4.1 Notwithstanding Section 5.1 of the MSA, any reusable components, frameworks, or tools developed during this project that are not specific to Client's business requirements shall remain the property of Provider. Provider grants Client a perpetual, non-exclusive license to use such components.
+
+4.2 Client-specific deliverables, including the data warehouse schema, custom ETL pipelines, and Client-branded dashboards, shall be owned by Client as work made for hire.
+
+SECTION 5 - LIABILITY
+
+5.1 Provider's total liability under this SOW shall not exceed the total fees paid under this SOW ($450,000), notwithstanding the broader liability cap in Section 4.1 of the MSA.
+
+SECTION 6 - INSURANCE
+
+6.1 For this engagement, Provider shall maintain professional liability insurance with minimum coverage of $5,000,000 per claim. This is a higher threshold than the $3,000,000 requirement in Section 7.2 of the MSA.
+
+SECTION 7 - GOVERNING LAW
+
+7.1 This SOW shall be governed by and construed in accordance with the laws of the State of California.
+
+SECTION 8 - NOTICE
+
+8.1 Notices regarding this SOW may be delivered by email to the project managers designated by each party, in addition to the formal notice methods specified in the MSA.
+
+SECTION 9 - DATA PROTECTION
+
+9.1 Provider shall comply with all applicable data protection laws, including CCPA and GDPR where applicable.
+
+9.2 Provider shall notify Client within twenty-four (24) hours of discovering any data breach affecting Client data.
+
+9.3 Upon termination, Provider shall securely delete all Client data within thirty (30) days and provide certification of destruction.
