@@ -105,8 +105,17 @@ class ApiError extends Error {
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    const body = await response.json().catch(() => ({ message: 'Request failed' }));
-    throw new ApiError(body.message || 'Request failed', response.status);
+    const body = await response.json().catch(() => ({ message: null }));
+    let errorMsg = body.message;
+    if (!errorMsg && typeof body.detail === 'string') {
+      errorMsg = body.detail;
+    } else if (!errorMsg && Array.isArray(body.detail) && body.detail.length > 0) {
+      errorMsg = body.detail.map((d: { msg?: string }) => d.msg || JSON.stringify(d)).join('; ');
+    }
+    if (!errorMsg) {
+      errorMsg = `Server error (${response.status} ${response.statusText})`;
+    }
+    throw new ApiError(errorMsg, response.status);
   }
   return response.json() as Promise<T>;
 }
