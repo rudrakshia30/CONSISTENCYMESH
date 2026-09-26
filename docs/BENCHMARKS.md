@@ -22,13 +22,13 @@
 | Retrieval Precision % | 100.0 | 100.0 | 100.0 |
 | Relevant-Clause Recall % | 55.6 | 55.6 | 55.6 |
 | Irrelevant Clause Rate % | 0.0 | 0.0 | 0.0 |
-| Query Intent & Retrieval Latency (ms) | 4.26 | 3.89 | 4.53 |
+| Query Intent & Retrieval Latency (ms) | 5.18 | 5.15 | 5.3 |
 | Findings Generated | 287 | 287 | 287 |
 | Cache Hit Rate % | 0.0 | 0.0 | 0.0 |
 | p50 Latency (ms) | 0.01 | 0.01 | 0.01 |
-| p95 Latency (ms) | 0.02 | 0.02 | 0.01 |
+| p95 Latency (ms) | 0.02 | 0.02 | 0.02 |
 | Est. Tokens | 19310 | 19310 | 19310 |
-| Wall Clock (s) | 1.558 | 1.627 | 1.482 |
+| Wall Clock (s) | 1.752 | 1.584 | 1.674 |
 
 ## Key Findings
 
