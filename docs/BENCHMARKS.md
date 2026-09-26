@@ -22,20 +22,21 @@
 | Retrieval Precision % | 100.0 | 100.0 | 100.0 |
 | Relevant-Clause Recall % | 55.6 | 55.6 | 55.6 |
 | Irrelevant Clause Rate % | 0.0 | 0.0 | 0.0 |
-| Query Intent & Retrieval Latency (ms) | 5.18 | 5.15 | 5.3 |
+| Query Intent & Retrieval Latency (ms) | 3.9 | 3.71 | 4.44 |
 | Findings Generated | 287 | 287 | 287 |
-| Cache Hit Rate % | 0.0 | 0.0 | 0.0 |
-| p50 Latency (ms) | 0.01 | 0.01 | 0.01 |
-| p95 Latency (ms) | 0.02 | 0.02 | 0.02 |
-| Est. Tokens | 19310 | 19310 | 19310 |
-| Wall Clock (s) | 1.752 | 1.584 | 1.674 |
+| Cache Hit Rate % | 0.0 | 100.0 | 100.0 |
+| p50 Latency (ms) | 0.01 | 0 | 0 |
+| p95 Latency (ms) | 0.02 | 0 | 0 |
+| Est. Tokens | 19310 | 0 | 0 |
+| Wall Clock (s) | 1.369 | 1.266 | 1.29 |
 
 ## Key Findings
 
-- **100% Retrieval Precision**: Staged hybrid retrieval achieves 100.0% precision, completely excluding generic-word mismatches (e.g. payment clauses for termination queries).
-- **0.0% Irrelevant Clause Rate**: Zero irrelevant clauses passed to QA reasoning.
+- **100.0% Retrieval Precision**: Staged hybrid retrieval achieves 100.0% precision, completely excluding generic-word mismatches (e.g. payment clauses for termination queries).
+- **0.0% Irrelevant Clause Rate**: Zero irrelevant clauses passed to QA reasoning on Run 1.
 - **Candidate Reduction**: 87.6% of naive pairs eliminated by deterministic TF-IDF + metadata filtering (2309 → 287).
-- **LLM Calls Saved**: 2022 unnecessary LLM calls avoided per analysis run.
+- **LLM Calls Saved (filtering)**: 2022 unnecessary LLM calls avoided per analysis run via candidate filtering.
+- **Cache Hit Rate on repeat runs**: Run 1 (cold cache) is 0.0%; subsequent runs against the identical fixture set show the effect of content-addressable caching — see the table above.
 
 ## How to Reproduce
 
