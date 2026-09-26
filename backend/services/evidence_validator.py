@@ -93,14 +93,8 @@ class EvidenceValidator:
             uncertainty = ("All provided evidence citations failed validation against source text. " + uncertainty).strip()
 
         if not valid_spans:
-            if raw_judgment.evidence:
-                first = raw_judgment.evidence[0]
-                valid_spans = [EvidenceSpan(
-                    document_id=first.document_id,
-                    clause_id=first.clause_id,
-                    page=first.page,
-                    text_span=first.text_span,
-                )]
+            confidence = Confidence.NOT_ESTABLISHED
+            uncertainty = ("All provided evidence citations failed validation against source text. " + uncertainty).strip()
 
         safe_explanation = sanitize_finding_text(raw_judgment.explanation)
 
@@ -110,6 +104,16 @@ class EvidenceValidator:
             rel_type = RelationshipType.AMBIGUOUS
             uncertainty = ("Unknown relationship type returned by AI. " + uncertainty).strip()
 
+        # Risk level determination based on relationship type and topic content
+        from backend.models.schemas import RiskLevel
+        risk_level = raw_judgment.risk_level or RiskLevel.MEDIUM
+        if rel_type == RelationshipType.CONFLICT:
+            risk_level = RiskLevel.CRITICAL if any(w in safe_explanation.lower() for w in ["liability", "indemnification", "termination", "cap"]) else RiskLevel.HIGH
+        elif rel_type == RelationshipType.OVERRIDE:
+            risk_level = RiskLevel.HIGH
+        elif rel_type == RelationshipType.CONSISTENT:
+            risk_level = RiskLevel.INFORMATIONAL
+
         return Finding(
             finding_id=str(uuid.uuid4()),
             relationship_type=rel_type,
@@ -118,6 +122,7 @@ class EvidenceValidator:
             evidence=valid_spans,
             uncertainty=uncertainty.strip() or None,
             validated=validated,
+            risk_level=risk_level,
         )
 
     def validate_qa_evidence(
@@ -131,7 +136,7 @@ class EvidenceValidator:
         Enforces:
         1. Every cited clause exists in candidate clauses.
         2. Quoted text span is a substring of candidate clause text.
-        3. If intent asks for comparison/conflict, require evidence from >= 2 distinct clauses.
+        3. If intent asks for comparison/conflict, require evidence from >= 2 distinct documents.
 
         Args:
             raw_evidence: Evidence spans returned by AI.
@@ -158,9 +163,10 @@ class EvidenceValidator:
                     ))
 
         distinct_clause_ids = {s.clause_id for s in valid_spans}
+        distinct_doc_ids = {s.document_id for s in valid_spans}
 
         if intent and intent.has_comparison_intent:
-            if len(distinct_clause_ids) < 2:
+            if len(distinct_clause_ids) < 2 and len(distinct_doc_ids) < 2:
                 return (
                     [],
                     Confidence.NOT_ESTABLISHED,

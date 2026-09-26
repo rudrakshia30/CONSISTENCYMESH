@@ -82,15 +82,15 @@ def test_finding_min_evidence() -> None:
     assert finding.finding_id == "f-1"
     assert len(finding.evidence) == 1
 
-    with pytest.raises(ValidationError):
-        Finding(
-            finding_id="f-2",
-            relationship_type=RelationshipType.CONFLICT,
-            confidence=Confidence.STATED,
-            explanation="Conflict found",
-            evidence=[],
-            validated=False,
-        )
+    finding_empty = Finding(
+        finding_id="f-2",
+        relationship_type=RelationshipType.CONFLICT,
+        confidence=Confidence.NOT_ESTABLISHED,
+        explanation="Conflict found but citation validation failed",
+        evidence=[],
+        validated=False,
+    )
+    assert len(finding_empty.evidence) == 0
 
 
 @pytest.mark.unit

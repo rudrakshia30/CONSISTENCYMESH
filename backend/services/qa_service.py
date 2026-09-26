@@ -73,10 +73,13 @@ class QAService:
 
         document_ids: list[str] = job_data.get("document_ids", [])
 
-        # 3. Load all clauses across documents
+        # 3. Load all clauses across documents in parallel
         all_clauses: list[Clause] = []
-        for doc_id in document_ids:
-            clauses_data = await self._state_store.get(f"doc:{doc_id}:clauses")
+        import asyncio
+        clauses_results = await asyncio.gather(
+            *[self._state_store.get(f"doc:{doc_id}:clauses") for doc_id in document_ids]
+        )
+        for clauses_data in clauses_results:
             if clauses_data is not None:
                 all_clauses.extend(Clause.model_validate(c) for c in clauses_data)
 

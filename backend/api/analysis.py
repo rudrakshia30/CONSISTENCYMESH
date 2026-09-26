@@ -107,3 +107,43 @@ async def get_analysis_metrics(
     job_manager = _get_job_manager()
     metrics = await job_manager.get_metrics(job_id)
     return MetricsResponse(job_id=job_id, metrics=metrics)
+
+
+@router.get("/{job_id}/export")
+async def export_analysis_results(
+    job_id: str,
+    session_id: str = Query(...),
+    format: str = Query(default="json"),
+):
+    """Export analysis findings in JSON or CSV format for audit trails and reporting.
+
+    Args:
+        job_id: Analysis job ID.
+        session_id: Session ID for isolation.
+        format: Output format ('json' or 'csv').
+
+    Returns:
+        Formatted export string or JSON payload.
+    """
+    from fastapi.responses import Response
+    import csv
+    import io
+
+    job_manager = _get_job_manager()
+    status = await job_manager.get_status(job_id, session_id)
+    if not status.result or not status.result.findings:
+        return Response(content="No findings available", media_type="text/plain")
+
+    if format == "csv":
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(["finding_id", "relationship_type", "confidence", "risk_level", "explanation", "evidence_count"])
+        for f in status.result.findings:
+            writer.writerow([f.finding_id, f.relationship_type, f.confidence, f.risk_level, f.explanation, len(f.evidence)])
+        return Response(
+            content=output.getvalue(),
+            media_type="text/csv",
+            headers={"Content-Disposition": f"attachment; filename=consistency_report_{job_id[:8]}.csv"},
+        )
+
+    return status.result.findings

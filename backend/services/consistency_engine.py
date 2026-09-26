@@ -91,12 +91,15 @@ class ConsistencyEngine:
         Returns:
             Complete analysis result with findings and consistency graph.
         """
-        # 1. Load all clauses for all documents
+        # 1. Load all clauses for all documents in parallel
         clauses_by_doc: dict[str, list[Clause]] = {}
         all_clauses: list[Clause] = []
 
-        for doc_id in document_ids:
-            clauses_data = await self._state_store.get(f"doc:{doc_id}:clauses")
+        doc_clauses_results = await asyncio.gather(
+            *[self._state_store.get(f"doc:{doc_id}:clauses") for doc_id in document_ids]
+        )
+
+        for doc_id, clauses_data in zip(document_ids, doc_clauses_results):
             if clauses_data is not None:
                 doc_clauses = [Clause.model_validate(c) for c in clauses_data]
                 clauses_by_doc[doc_id] = doc_clauses
@@ -129,33 +132,38 @@ class ConsistencyEngine:
             clause_a: Clause, clause_b: Clause, score: float
         ) -> Finding | None:
             """Analyze a single clause pair with caching and deduplication."""
-            async with semaphore:
-                # Build cache key from sorted content hashes
-                hash_a = content_hash(clause_a.text.encode("utf-8"))
-                hash_b = content_hash(clause_b.text.encode("utf-8"))
-                sorted_hashes = sorted([hash_a, hash_b])
-                cache_key = build_cache_key(
-                    sorted_hashes[0] + sorted_hashes[1],
-                    PROMPT_VERSION,
-                    self._settings.gemini_model,
-                )
+            # Build cache key from sorted content hashes
+            hash_a = content_hash(clause_a.text.encode("utf-8"))
+            hash_b = content_hash(clause_b.text.encode("utf-8"))
+            sorted_hashes = sorted([hash_a, hash_b])
+            cache_key = build_cache_key(
+                sorted_hashes[0] + sorted_hashes[1],
+                PROMPT_VERSION,
+                self._settings.gemini_model,
+            )
 
-                # Check in-flight deduplication
+            # Check in-flight deduplication BEFORE acquiring semaphore
+            if cache_key in self._in_flight:
+                return await self._in_flight[cache_key]
+
+            # Check cache BEFORE acquiring semaphore
+            cached = await self._cache_store.get_cached(cache_key)
+            if cached is not None:
+                job_metrics.record_llm_call(LLMCallMetric(
+                    provider="cache",
+                    operation="consistency_judge",
+                    latency_ms=0,
+                    success=True,
+                    cache_hit=True,
+                    estimated_tokens=0,
+                ))
+                return Finding.model_validate(cached)
+
+            # Acquire semaphore ONLY for actual in-flight LLM calls
+            async with semaphore:
+                # Double-check in-flight after acquiring semaphore
                 if cache_key in self._in_flight:
                     return await self._in_flight[cache_key]
-
-                # Check cache
-                cached = await self._cache_store.get_cached(cache_key)
-                if cached is not None:
-                    job_metrics.record_llm_call(LLMCallMetric(
-                        provider="cache",
-                        operation="consistency_judge",
-                        latency_ms=0,
-                        success=True,
-                        cache_hit=True,
-                        estimated_tokens=0,
-                    ))
-                    return Finding.model_validate(cached)
 
                 # Create future for deduplication
                 loop = asyncio.get_running_loop()
@@ -229,10 +237,12 @@ class ConsistencyEngine:
         # 5. Build consistency graph
         graph = self._build_graph(findings, document_ids)
 
-        # 6. Load document metadata
+        # 6. Load document metadata in parallel
         documents: list[Document] = []
-        for doc_id in document_ids:
-            doc_data = await self._state_store.get(f"doc:{doc_id}:data")
+        doc_data_results = await asyncio.gather(
+            *[self._state_store.get(f"doc:{doc_id}:data") for doc_id in document_ids]
+        )
+        for doc_data in doc_data_results:
             if doc_data is not None:
                 documents.append(Document.model_validate(doc_data))
 

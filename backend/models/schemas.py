@@ -48,6 +48,23 @@ class RelationshipType(str, Enum):
     UNADDRESSED = "UNADDRESSED"
 
 
+class RiskLevel(str, Enum):
+    """Risk severity classification for findings.
+
+    CRITICAL: Major contradiction in core liabilities, caps, or termination rights.
+    HIGH: Clear conflict or override in payment, scope, or compliance terms.
+    MEDIUM: Ambiguous terms or unaddressed requirements.
+    LOW: Minor wording differences without legal impact.
+    INFORMATIONAL: Mutually consistent provisions.
+    """
+
+    CRITICAL = "CRITICAL"
+    HIGH = "HIGH"
+    MEDIUM = "MEDIUM"
+    LOW = "LOW"
+    INFORMATIONAL = "INFORMATIONAL"
+
+
 class JobState(str, Enum):
     """Lifecycle states for an analysis job.
 
@@ -116,12 +133,18 @@ class Document(BaseModel):
         filename: Original upload filename (sanitized).
         page_count: Number of pages extracted.
         uploaded_at: Timestamp when the document was uploaded.
+        document_type: Category (e.g., MSA, SOW, Amendment).
+        effective_date: Extracted or declared effective date.
+        precedence_rank: Document hierarchy rank (higher = overrides lower).
     """
 
     document_id: str
     filename: str
     page_count: int
     uploaded_at: datetime = Field(default_factory=datetime.utcnow)
+    document_type: str | None = None
+    effective_date: str | None = None
+    precedence_rank: int = 0
 
 
 class Clause(BaseModel):
@@ -165,19 +188,23 @@ class EvidenceSpan(BaseModel):
         clause_id: The clause within the document.
         page: Page number of the evidence.
         text_span: The exact quoted text serving as evidence.
+        start_char: Optional starting character offset.
+        end_char: Optional ending character offset.
     """
 
     document_id: str
     clause_id: str
     page: int
     text_span: str
+    start_char: int | None = None
+    end_char: int | None = None
 
 
 class Finding(BaseModel):
     """A validated relationship finding between clauses in different documents.
 
     Every finding carries a relationship type, confidence tier, explanation,
-    and validated evidence spans. The 'validated' flag is set by the
+    validated evidence spans, and a risk level. The 'validated' flag is set by the
     EvidenceValidator, never by the LLM.
 
     Attributes:
@@ -188,15 +215,17 @@ class Finding(BaseModel):
         evidence: List of evidence spans backing the finding (min 1).
         uncertainty: Explicit uncertainty note when confidence is NOT_ESTABLISHED.
         validated: Whether evidence has been deterministically validated.
+        risk_level: Risk severity tier (CRITICAL, HIGH, MEDIUM, LOW, INFORMATIONAL).
     """
 
     finding_id: str
     relationship_type: RelationshipType
     confidence: Confidence
     explanation: str
-    evidence: list[EvidenceSpan] = Field(min_length=1)
+    evidence: list[EvidenceSpan] = Field(default_factory=list)
     uncertainty: str | None = None
     validated: bool = False
+    risk_level: RiskLevel = RiskLevel.MEDIUM
 
 
 # ---------------------------------------------------------------------------
@@ -212,12 +241,16 @@ class RawEvidenceSpan(BaseModel):
         clause_id: Claimed source clause.
         page: Claimed page number.
         text_span: Claimed text excerpt.
+        start_char: Optional starting character offset.
+        end_char: Optional ending character offset.
     """
 
     document_id: str
     clause_id: str
     page: int
     text_span: str
+    start_char: int | None = None
+    end_char: int | None = None
 
 
 class RawJudgment(BaseModel):
@@ -232,6 +265,7 @@ class RawJudgment(BaseModel):
         explanation: Why this relationship was detected.
         evidence: Supporting evidence spans (claimed, not yet validated).
         uncertainty: Optional uncertainty note.
+        risk_level: Optional risk level assigned by AI.
     """
 
     relationship_type: RelationshipType
@@ -239,6 +273,7 @@ class RawJudgment(BaseModel):
     explanation: str
     evidence: list[RawEvidenceSpan] = Field(min_length=1)
     uncertainty: str | None = None
+    risk_level: RiskLevel | None = None
 
 
 class RawAnswer(BaseModel):

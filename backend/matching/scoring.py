@@ -20,15 +20,21 @@ class CandidateScorer:
         self._tfidf_matrix: Any = None
         self._clause_id_to_idx: dict[str, int] = {}
         self._clauses: list[Clause] = []
+        self._topics_map: dict[str, set[str]] = {}
+        self._entities_map: dict[str, set[str]] = {}
+        self._dates_map: dict[str, set[str]] = {}
 
     def build_index(self, clauses: list[Clause]) -> None:
-        """Build the TF-IDF index from a list of clauses.
+        """Build the TF-IDF index and pre-cache metadata sets from a list of clauses.
 
         Args:
             clauses: All clauses across all documents in the analysis.
         """
         self._clauses = clauses
         self._clause_id_to_idx = {clause.clause_id: idx for idx, clause in enumerate(clauses)}
+        self._topics_map = {clause.clause_id: set(clause.topics) for clause in clauses}
+        self._entities_map = {clause.clause_id: set(clause.entities) for clause in clauses}
+        self._dates_map = {clause.clause_id: set(clause.dates) for clause in clauses}
 
         if not clauses:
             return
@@ -74,9 +80,30 @@ class CandidateScorer:
         Returns:
             Composite score in [0, 1].
         """
-        topic_score = self._jaccard(set(clause_a.topics), set(clause_b.topics))
-        entity_score = self._jaccard(set(clause_a.entities), set(clause_b.entities))
-        date_score = self._jaccard(set(clause_a.dates), set(clause_b.dates))
+        topics_a = self._topics_map.get(clause_a.clause_id) or set(clause_a.topics)
+        topics_b = self._topics_map.get(clause_b.clause_id) or set(clause_b.topics)
+        topic_score = self._jaccard(topics_a, topics_b)
+
+        entities_a = self._entities_map.get(clause_a.clause_id) or set(clause_a.entities)
+        entities_b = self._entities_map.get(clause_b.clause_id) or set(clause_b.entities)
+        entity_score = self._jaccard(entities_a, entities_b)
+
+        dates_a = self._dates_map.get(clause_a.clause_id) or set(clause_a.dates)
+        dates_b = self._dates_map.get(clause_b.clause_id) or set(clause_b.dates)
+        date_score = self._jaccard(dates_a, dates_b)
+
+        partial_score = (
+            self._settings.candidate_topic_overlap_weight * topic_score
+            + self._settings.candidate_entity_overlap_weight * entity_score
+            + self._settings.candidate_date_overlap_weight * date_score
+        )
+
+        max_possible_tfidf = self._settings.candidate_tfidf_weight
+        threshold = self._settings.candidate_composite_threshold
+
+        # Early exit: if even a 1.0 TF-IDF score cannot reach threshold, skip TF-IDF calculation
+        if partial_score + max_possible_tfidf < threshold:
+            return float(partial_score)
 
         tfidf_score = 0.0
         if (
@@ -88,16 +115,11 @@ class CandidateScorer:
             idx_b = self._clause_id_to_idx[clause_b.clause_id]
             vec_a = self._tfidf_matrix[idx_a]
             vec_b = self._tfidf_matrix[idx_b]
-            sim = cosine_similarity(vec_a, vec_b)[0][0]
-            tfidf_score = max(0.0, float(sim))
+            # Fast sparse dot product (TF-IDF rows are L2-normalized)
+            sim = float(vec_a.dot(vec_b.T).toarray()[0, 0])
+            tfidf_score = max(0.0, sim)
 
-        composite = (
-            self._settings.candidate_topic_overlap_weight * topic_score
-            + self._settings.candidate_entity_overlap_weight * entity_score
-            + self._settings.candidate_date_overlap_weight * date_score
-            + self._settings.candidate_tfidf_weight * tfidf_score
-        )
-
+        composite = partial_score + self._settings.candidate_tfidf_weight * tfidf_score
         return float(composite)
 
     def filter_candidates(
